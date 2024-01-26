@@ -1,18 +1,25 @@
-use actix_web::{get, web, App, HttpServer, Result};
+use actix_web::{post, web, App, HttpResponse, HttpServer};
 use actix_files::Files;
+use serde::Deserialize;
 
-/// extract path info from "/users/{user_id}/{friend}" url
-/// {user_id} - deserializes to a u32
-/// {friend} - deserializes to a String
-#[get("/users/{user_id}/{friend}")] // <- define path parameters
-async fn index(path: web::Path<(u32, String)>) -> Result<String> {
-    let (user_id, friend) = path.into_inner();
-    Ok(format!("Welcome {}, user_id {}!", friend, user_id))
+
+#[derive(Deserialize)]
+struct FormData {
+    username: String,
+    password: String,
+}
+
+#[post("/login")] 
+async fn login(form: web::Form<FormData>) -> HttpResponse  {
+    HttpResponse::Ok().body(format!("username: {}, password : {}", form.username, form.password))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(index).service(Files::new("/static", "./static/").show_files_listing()))
+    HttpServer::new(|| App::new()
+        .service(login)
+        .service(Files::new("/static", "./static/")
+        ))
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
